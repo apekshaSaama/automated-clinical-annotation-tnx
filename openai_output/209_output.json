@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1,
+    "data": {
+      "text": "Clinical note:\n[211-319] His lifestyle has included 1500 ml beer consumption per day and 40 cigarettes per day for the past 40 years."
+    },
+    "annotations": [],
+    "predictions": [
+      {
+        "id": "pred_set_001",
+        "model_version": "smoking_status_current_v1",
+        "score": 1.0,
+        "result": [
+          {
+            "id": "ent_001",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 95,
+              "end": 105,
+              "text": "cigarettes",
+              "labels": [
+                "Smoking_Type"
+              ]
+            }
+          },
+          {
+            "id": "ent_002",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 88,
+              "end": 116,
+              "text": "40 cigarettes per day",
+              "labels": [
+                "Substance_Frequency"
+              ]
+            }
+          },
+          {
+            "id": "ent_003",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 125,
+              "end": 137,
+              "text": "past 40 years",
+              "labels": [
+                "Substance_Duration"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

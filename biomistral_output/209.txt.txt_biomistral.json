@@ -1,0 +1,1 @@
+{ "entities": [ { "text": "1500 ml", "label": "Substance_Quantity", "assertion": "Unknown if ever smoked" } ], "relations": [ { "from": 0, "to": 0, "type": "Unknown if ever smoked" } ] }

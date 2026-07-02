@@ -1,0 +1,8 @@
+Consultation Note
+Patient: John A. Smith
+Date: 2026-06-16
+
+KRAS and NRAS are tested for colon cancer detection.
+
+Reason for Consultation: Evaluation of colorectal cancer biomarker results and discussion of treatment implications following recent pathology review.
+

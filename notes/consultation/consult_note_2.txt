@@ -1,0 +1,11 @@
+Consultation Note
+Patient: Maria L. Gomez
+Date: 2026-06-19
+
+Reason for Consultation: Review of molecular pathology findings and recommendation of oncology management strategies based on biomarker results.
+
+History of Present Illness: The patient was seen for consultation after recent pathology confirmation of colorectal disease. She has experienced ongoing change in bowel habits, weight loss, and reduced appetite. Molecular testing was performed as part of standard of care to characterize tumor biology and guide treatment selection.
+
+Assessment: Tumor profiling demonstrated a KRAS G13D mutation, which is a recognized activating mutation in the KRAS gene and may have implications for response to certain targeted therapies. NRAS Q61K mutation was identified, indicating an additional RAS-pathway alteration that should be considered in interpretation of pathway activity. BRAF V600E was absent, supporting that the tumor is not driven by this canonical BRAF mutation. Microsatellite instability (MSI) testing was interpreted as MSS, indicating microsatellite stable disease and no clear evidence of mismatch repair deficiency. The combined molecular profile suggests a non-MSI-high, RAS-pathway-altered tumor phenotype.
+
+Plan: Recommend standard chemotherapy regimen appropriate for metastatic or advanced disease, with consideration of systemic therapy guided by disease stage and tolerance. Continue ongoing monitoring of symptoms and clinical status. Repeat molecular testing is recommended if there is disease progression, recurrence, or substantial change in tumor behavior that could affect therapeutic decisions.

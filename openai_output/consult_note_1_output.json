@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1001,
+    "data": {
+      "text": "Clinical note:\nConsultation Note\nPatient: John A. Smith\nDate: 2026-06-16\n\nReason for Consultation: Evaluation of colorectal cancer biomarker results and discussion of treatment implications following recent pathology review.\n\nHistory of Present Illness: The patient was referred for oncology consultation after a diagnosis of colorectal neoplasm and completion of tissue-based molecular profiling. The tumor specimen was reviewed in the context of recent imaging and clinical symptoms, including abdominal discomfort and fatigue. The patient remains clinically stable, with no new systemic symptoms noted since initial presentation.\n\nAssessment: Molecular testing demonstrated a KRAS G12D mutation detected in tumor tissue, supporting a known activating alteration in the MAPK signaling pathway. NRAS testing was negative, which helps exclude an additional RAS pathway alteration. BRAF V600E was not detected, decreasing concern for a BRAF-driven tumor biology pattern. Microsatellite instability (MSI) testing showed an MSI-Low phenotype, indicating low evidence of mismatch repair deficiency. Together, these results suggest a tumor profile that is biologically distinct from MSI-high and BRAF-mutant colorectal cancers.\n\nPlan: Continue surveillance with close clinical follow-up and review the overall pathology and radiographic findings in multidisciplinary tumor board discussion. The molecular profile will be incorporated into future therapeutic planning. Targeted therapy options will be considered based on tumor characteristics, disease burden, and patient preferences. Repeat molecular testing is not currently indicated unless there is disease progression or a change in clinical status."
+    },
+    "annotations": [],
+    "predictions": [
+      {
+        "id": "pred_set_001",
+        "model_version": "healthcare_relation_extraction_v3",
+        "score": 0.89,
+        "result": [
+          {
+            "id": "e1",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 538,
+              "end": 554,
+              "text": "Molecular testing",
+              "labels": [
+                "TEST"
+              ]
+            }
+          },
+          {
+            "id": "e2",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 571,
+              "end": 575,
+              "text": "KRAS",
+              "labels": [
+                "GENE"
+              ]
+            }
+          },
+          {
+            "id": "e3",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 576,
+              "end": 580,
+              "text": "G12D",
+              "labels": [
+                "MUTATION"
+              ]
+            }
+          },
+          {
+            "id": "e4",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 590,
+              "end": 598,
+              "text": "detected",
+              "labels": [
+                "RESULT"
+              ]
+            }
+          },
+          {
+            "id": "e5",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 685,
+              "end": 689,
+              "text": "NRAS",
+              "labels": [
+                "GENE"
+              ]
+            }
+          },
+          {
+            "id": "e6",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 685,
+              "end": 697,
+              "text": "NRAS testing",
+              "labels": [
+                "TEST"
+              ]
+            }
+          },
+          {
+            "id": "e7",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 702,
+              "end": 710,
+              "text": "negative",
+              "labels": [
+                "RESULT"
+              ]
+            }
+          },
+          {
+            "id": "e8",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 786,
+              "end": 790,
+              "text": "BRAF",
+              "labels": [
+                "GENE"
+              ]
+            }
+          },
+          {
+            "id": "e9",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 791,
+              "end": 796,
+              "text": "V600E",
+              "labels": [
+                "MUTATION"
+              ]
+            }
+          },
+          {
+            "id": "e10",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 805,
+              "end": 817,
+              "text": "not detected",
+              "labels": [
+                "RESULT"
+              ]
+            }
+          },
+          {
+            "id": "e11",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 909,
+              "end": 943,
+              "text": "Microsatellite instability (MSI)",
+              "labels": [
+                "MSI"
+              ]
+            }
+          },
+          {
+            "id": "e12",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 945,
+              "end": 956,
+              "text": "testing showed",
+              "labels": [
+                "TEST"
+              ]
+            }
+          },
+          {
+            "id": "e13",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 961,
+              "end": 968,
+              "text": "MSI-Low",
+              "labels": [
+                "MSI"
+              ]
+            }
+          },
+          {
+            "id": "e14",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 961,
+              "end": 968,
+              "text": "MSI-Low",
+              "labels": [
+                "STATUS"
+              ]
+            }
+          },
+          {
+            "id": "e15",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 1266,
+              "end": 1281,
+              "text": "Targeted therapy",
+              "labels": [
+                "TREATMENT"
+              ]
+            }
+          },
+          {
+            "id": "e16",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 1390,
+              "end": 1414,
+              "text": "Repeat molecular testing",
+              "labels": [
+                "TEST"
+              ]
+            }
+          },
+          {
+            "id": "r1",
+            "from_id": "e2",
+            "to_id": "e3",
+            "type": "relation",
+            "labels": [
+              "HAS_MUTATION"
+            ],
+            "score": 0.9
+          },
+          {
+            "id": "r2",
+            "from_id": "e1",
+            "to_id": "e4",
+            "type": "relation",
+            "labels": [
+              "HAS_RESULT"
+            ],
+            "score": 0.86
+          },
+          {
+            "id": "r3",
+            "from_id": "e6",
+            "to_id": "e7",
+            "type": "relation",
+            "labels": [
+              "HAS_RESULT"
+            ],
+            "score": 0.9
+          },
+          {
+            "id": "r4",
+            "from_id": "e8",
+            "to_id": "e9",
+            "type": "relation",
+            "labels": [
+              "HAS_MUTATION"
+            ],
+            "score": 0.88
+          },
+          {
+            "id": "r5",
+            "from_id": "e9",
+            "to_id": "e10",
+            "type": "relation",
+            "labels": [
+              "HAS_RESULT"
+            ],
+            "score": 0.83
+          },
+          {
+            "id": "r6",
+            "from_id": "e11",
+            "to_id": "e14",
+            "type": "relation",
+            "labels": [
+              "HAS_STATUS"
+            ],
+            "score": 0.87
+          }
+        ]
+      }
+    ]
+  }
+]

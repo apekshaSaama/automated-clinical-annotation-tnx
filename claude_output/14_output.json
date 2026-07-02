@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "data": {
+      "text": "The patient was a 62-year-old male with a past medical history of liver cirrhosis secondary to hepatitis C, tobacco use, and post-stent coronary artery disease, who initially came to the hospital for elective left and right heart catheterization as a pre-transplant evaluation."
+    },
+    "annotations": [],
+    "predictions": [
+      {
+        "id": "pred_set_1",
+        "model_version": "healthcare_relation_extraction_v3",
+        "score": 0.85,
+        "result": [
+          {
+            "id": "chunk_1",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 108,
+              "end": 115,
+              "text": "tobacco",
+              "labels": [
+                "Smoking_Status"
+              ]
+            }
+          },
+          {
+            "id": "assertion_1",
+            "from_name": "assertion",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 108,
+              "end": 115,
+              "text": "tobacco",
+              "labels": [
+                "Smoker current status unknown"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

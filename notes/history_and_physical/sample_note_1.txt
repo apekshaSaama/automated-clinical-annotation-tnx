@@ -1,0 +1,13 @@
+History and Physical
+Patient: John A. Smith
+Date: 2026-06-15
+
+Chief Complaint: Abdominal discomfort and fatigue.
+
+History of Present Illness: Patient reports intermittent cramping and bloating for three weeks. No fever. Family history significant for colorectal cancer.
+
+Assessment: Concern for possible colorectal disease. Colon biomarker evaluation requested, including KRAS and NRAS mutation analysis and microsatellite instability assessment.
+
+Labs: CEA 4.8 ng/mL, CA 19-9 18 U/mL.
+
+Plan: Colonoscopy recommended. Molecular testing for KRAS, NRAS, and microsatellite instability to be sent. Follow-up in two weeks.

@@ -1,0 +1,13 @@
+History and Physical
+Patient: Daniel R. Lee
+Date: 2026-06-20
+
+Chief Complaint: Rectal bleeding and weakness.
+
+History of Present Illness: Patient reports bright red blood per rectum and fatigue for one week. No significant past medical history other than hypertension.
+
+Assessment: Evaluation for colorectal neoplasm. Colon biomarker screening initiated, including KRAS and NRAS mutation analysis and microsatellite instability testing.
+
+Labs: CEA 3.2 ng/mL, CA 19-9 14 U/mL.
+
+Plan: Urgent gastroenterology consult and colonoscopy. KRAS, NRAS, and microsatellite results to be reviewed.

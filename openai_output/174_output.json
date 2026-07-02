@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1011,
+    "data": {
+      "text": "He had a smoking history of 15 pack-years."
+    },
+    "annotations": [],
+    "predictions": [
+      {
+        "id": "pred_set_1011",
+        "model_version": "smoking_status_re_v1",
+        "score": 1.0,
+        "result": [
+          {
+            "id": "ent_1",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 9,
+              "end": 16,
+              "text": "smoking",
+              "labels": [
+                "Smoking_Status"
+              ]
+            }
+          },
+          {
+            "id": "assert_1",
+            "from_name": "assertion",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 9,
+              "end": 16,
+              "text": "smoking",
+              "labels": [
+                "Smoker current status unknown"
+              ]
+            }
+          },
+          {
+            "id": "ent_2",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 28,
+              "end": 41,
+              "text": "15 pack-years",
+              "labels": [
+                "Substance_Quantity"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+Consultation Note
+Patient: Daniel R. Lee
+Date: 2026-06-21
+
+Reason for Consultation: Discuss oncology molecular testing results and review treatment options for colorectal malignancy.
+
+History of Present Illness: The patient was referred for consultation after presentation with rectal bleeding, weakness, and fatigue. Initial evaluation raised concern for colorectal neoplasm, and molecular testing was ordered to support risk stratification and therapeutic planning. The patient remains under active evaluation pending further imaging and clinical correlation.
+
+Assessment: The specimen shows a BRAF V600E mutation, which is an important driver alteration associated with distinct tumor biology. KRAS was wild-type, and NRAS was also wild-type, indicating that the tumor did not demonstrate additional activating RAS pathway mutations. Microsatellite instability (MSI) testing showed high MSI (MSI-H), suggesting a high likelihood of mismatch repair deficiency and potential benefit from immunotherapy-based approaches. This combination of BRAF mutation and MSI-H is considered clinically significant and may influence prognosis and treatment selection.
+
+Plan: Consider immunotherapy as part of a coordinated treatment strategy, with current recommendations tailored to disease extent, patient performance status, and comorbidities. Continue close follow-up with serial imaging and repeat laboratory monitoring. Discuss the molecular findings with the multidisciplinary oncology team to ensure appropriate matching of targeted and immune-based therapies to the patient’s tumor profile.

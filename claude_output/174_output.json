@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1,
+    "data": {
+      "text": "He had a smoking history of 15 pack-years."
+    },
+    "annotations": [],
+    "predictions": [
+      {
+        "id": "pred_set_1",
+        "model_version": "healthcare_relation_extraction_v3",
+        "score": 0.87,
+        "result": [
+          {
+            "id": "chunk_1",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 9,
+              "end": 16,
+              "text": "smoking",
+              "labels": [
+                "Smoking_Status"
+              ]
+            }
+          },
+          {
+            "id": "assertion_1",
+            "from_name": "assertion",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 9,
+              "end": 16,
+              "text": "smoking",
+              "labels": [
+                "Smoker current status unknown"
+              ]
+            }
+          },
+          {
+            "id": "chunk_2",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 28,
+              "end": 41,
+              "text": "15 pack-years",
+              "labels": [
+                "Substance_Quantity"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

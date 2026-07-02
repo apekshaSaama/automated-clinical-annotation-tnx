@@ -1,0 +1,13 @@
+{
+  "predictions": [
+    {
+      "created_username": "azure_openai_clinical_ner",
+      "result": []
+    }
+  ],
+  "data": {
+    "title": "clinical_note",
+    "text": "Consultation Note\nPatient: John A. Smith\nDate: 2026-06-16\n\nReason for Consultation: Evaluation of colorectal cancer biomarker results and discussion of treatment implications following recent pathology review.\n\nHistory of Present Illness: The patient was referred for oncology consultation after a diagnosis of colorectal neoplasm and completion of tissue-based molecular profiling. The tumor specimen was reviewed in the context of recent imaging and clinical symptoms, including abdominal discomfort and fatigue. The patient remains clinically stable, with no new systemic symptoms noted since initial presentation.\n\nAssessment: Molecular testing demonstrated a KRAS G12D mutation detected in tumor tissue, supporting a known activating alteration in the MAPK signaling pathway. NRAS testing was negative, which helps exclude an additional RAS pathway alteration. BRAF V600E was not detected, decreasing concern for a BRAF-driven tumor biology pattern. Microsatellite instability (MSI) testing showed an MSI-Low phenotype, indicating low evidence of mismatch repair deficiency. Together, these results suggest a tumor profile that is biologically distinct from MSI-high and BRAF-mutant colorectal cancers.\n\nPlan: Continue surveillance with close clinical follow-up and review the overall pathology and radiographic findings in multidisciplinary tumor board discussion. The molecular profile will be incorporated into future therapeutic planning. Targeted therapy options will be considered based on tumor characteristics, disease burden, and patient preferences. Repeat molecular testing is not currently indicated unless there is disease progression or a change in clinical status.\n"
+  },
+  "id": 1
+}
