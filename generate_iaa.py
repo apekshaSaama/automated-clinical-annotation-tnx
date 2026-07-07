@@ -5,8 +5,9 @@ generate_IAA.py
 Compute Inter-Annotator Agreement (IAA) between human ground-truth annotations
 and model pre-annotations exported from John Snow Labs Generative AI Lab.
 
-Both inputs are JSON files that share the SAME task `id`. One file holds the
-human completions (ground truth), the other holds the new pre-annotations.
+Both inputs are JSON files that share the SAME `data.title` value. They do
+NOT share the same task `id`. One file holds the human completions (ground
+truth), the other holds the new pre-annotations.
 
 Metrics reported:
   - Token-level Cohen's kappa (BIO tagging)  -> the defensible "IAA" number
@@ -66,10 +67,14 @@ def _results_to_spans(results):
 
 
 def load_file(path):
-    """Return (spans, texts) dicts keyed by task id.
+    """Return (spans, texts) dicts keyed by `data.title`.
 
-    spans = {task_id: [(start, end, label), ...]}
-    texts = {task_id: source_text or None}
+    Ground-truth and prediction exports do NOT share the same task `id`, but
+    they do share `data.title` (e.g. the source document name/number), so
+    that is the key used to align tasks across the two files.
+
+    spans = {title: [(start, end, label), ...]}
+    texts = {title: source_text or None}
     """
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
@@ -78,12 +83,14 @@ def load_file(path):
 
     spans, texts = {}, {}
     for t in tasks:
-        if "id" not in t:
+        task_data = t.get("data") if isinstance(t.get("data"), dict) else {}
+        title = task_data.get("title")
+        if title is None:
             continue
-        tid = t["id"]
-        text = t.get("data", {}).get("text") if isinstance(t.get("data"), dict) else None
-        texts[tid] = text if isinstance(text, str) else None
-        spans[tid] = _results_to_spans(_extract_results(t))
+        title = str(title)
+        text = task_data.get("text")
+        texts[title] = text if isinstance(text, str) else None
+        spans[title] = _results_to_spans(_extract_results(t))
     return spans, texts
 
 
@@ -126,13 +133,13 @@ def token_kappa(texts, gt, pred, common_ids):
 
     y_true, y_pred = [], []
     skipped = 0
-    for tid in common_ids:
-        text = texts.get(tid)
+    for title in common_ids:
+        text = texts.get(title)
         if not text:
             skipped += 1
             continue
-        y_true += bio_tags(text, gt.get(tid, []))
-        y_pred += bio_tags(text, pred.get(tid, []))
+        y_true += bio_tags(text, gt.get(title, []))
+        y_pred += bio_tags(text, pred.get(title, []))
 
     if not y_true:
         print("No task text available -> cannot compute token-level kappa. "
@@ -149,9 +156,9 @@ def span_f1(gt, pred, common_ids, match="exact"):
     tp = fp = fn = 0
     per_label = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
 
-    for tid in common_ids:
-        g = set(gt.get(tid, []))
-        p = set(pred.get(tid, []))
+    for title in common_ids:
+        g = set(gt.get(title, []))
+        p = set(pred.get(title, []))
 
         if match == "exact":
             for span in p & g:
@@ -253,13 +260,13 @@ def _context_window(text, start, end, window=60):
 def build_iaa_rows(gt, pred, texts, common_ids, match="exact", context_window=60):
     """Build one row per GT/prediction chunk, aligned by character position.
 
-    Columns: chunks, ground_truth_label, prediction_label, task_id,
+    Columns: chunks, ground_truth_label, prediction_label, title,
     agreement, context.
     """
     rows = []
-    for tid in sorted(common_ids, key=str):
-        text = texts.get(tid) or ""
-        pairs = _pair_spans(gt.get(tid, []), pred.get(tid, []), match=match)
+    for title in sorted(common_ids, key=str):
+        text = texts.get(title) or ""
+        pairs = _pair_spans(gt.get(title, []), pred.get(title, []), match=match)
 
         for gs, ps in pairs:
             ref_span = gs if gs is not None else ps
@@ -272,7 +279,7 @@ def build_iaa_rows(gt, pred, texts, common_ids, match="exact", context_window=60
                 "chunks": chunk,
                 "ground_truth_label": gt_label,
                 "prediction_label": pred_label,
-                "task_id": tid,
+                "title": title,
                 "agreement": agreement,
                 "context": _context_window(text, ref_span[0], ref_span[1], context_window),
             })
@@ -281,7 +288,7 @@ def build_iaa_rows(gt, pred, texts, common_ids, match="exact", context_window=60
 
 
 def write_iaa_rows(path, rows):
-    fieldnames = ["chunks", "ground_truth_label", "prediction_label", "task_id", "agreement", "context"]
+    fieldnames = ["chunks", "ground_truth_label", "prediction_label", "title", "agreement", "context"]
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
@@ -297,29 +304,29 @@ def write_iaa_rows(path, rows):
 # Reporting
 # --------------------------------------------------------------------------- #
 def check_alignment(gt, pred, gt_texts, pred_texts):
-    """Return the set of shared task ids and warn about mismatches."""
+    """Return the set of shared `data.title` values and warn about mismatches."""
     common = set(gt) & set(pred)
     only_gt = set(gt) - set(pred)
     only_pred = set(pred) - set(gt)
 
     print(f"Ground-truth tasks : {len(gt)}")
     print(f"Pre-annot tasks    : {len(pred)}")
-    print(f"Shared task ids    : {len(common)}")
+    print(f"Shared titles      : {len(common)}")
     if only_gt:
-        print(f"  ! {len(only_gt)} id(s) only in ground truth (ignored), "
+        print(f"  ! {len(only_gt)} title(s) only in ground truth (ignored), "
               f"e.g. {sorted(only_gt)[:5]}")
     if only_pred:
-        print(f"  ! {len(only_pred)} id(s) only in pre-annotations (ignored), "
+        print(f"  ! {len(only_pred)} title(s) only in pre-annotations (ignored), "
               f"e.g. {sorted(only_pred)[:5]}")
 
     # offsets must be against the same text or every span looks like a disagreement
     text_mismatch = [
-        tid for tid in common
-        if gt_texts.get(tid) and pred_texts.get(tid) and gt_texts[tid] != pred_texts[tid]
+        title for title in common
+        if gt_texts.get(title) and pred_texts.get(title) and gt_texts[title] != pred_texts[title]
     ]
     if text_mismatch:
         print(f"  !! WARNING: source text differs for {len(text_mismatch)} shared "
-              f"task(s) (e.g. {text_mismatch[:3]}). Offsets will not align and IAA "
+              f"title(s) (e.g. {text_mismatch[:3]}). Offsets will not align and IAA "
               f"will be understated. Compute prediction offsets against the raw "
               f"text stored in the GT export.")
     print()
@@ -375,7 +382,7 @@ def main():
                     help="Primary span-match mode (both are reported regardless)")
     ap.add_argument("--csv", help="Optional path to write an aggregate metrics CSV report")
     ap.add_argument("--iaa-report", help="Optional path to write a per-chunk IAA report "
-                    "(columns: chunks, ground_truth_label, prediction_label, task_id, "
+                    "(columns: chunks, ground_truth_label, prediction_label, title, "
                     "agreement, context)")
     ap.add_argument("--context-window", type=int, default=60,
                     help="Characters of surrounding text to include on each side of a "
