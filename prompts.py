@@ -3,15 +3,21 @@ from __future__ import annotations
 
 def build_prompt(model_name: str, clinical_note: str, guideline_text: str) -> str:
     model_name_normalized = (model_name or "").strip().lower()
-    base_prompt = (
-        "Clinical note:\n"
-        f"{clinical_note}\n\n"
+    # Static portion (guideline + output format instructions) is emitted first and the
+    # per-note clinical text last, so it forms a stable, cacheable prefix across calls
+    # that share the same guideline (see Azure OpenAI prompt caching, which matches on
+    # the longest common prefix from the start of the request).
+    static_prompt = (
         "Annotation guideline:\n"
         f"{guideline_text}\n\n"
         "Return JSON only as a single JSON array. Each array element must be a document object with "
-        "id, data, annotations, and predictions. Use only entity labels, relation labels, and assertion "
+        "id, data, and predictions. Use only entity labels, relation labels, and assertion "
         "labels from the guideline.\n"
-        "Do not invent unsupported labels, relations, or assertion statuses.\n"
+        "Do not invent unsupported labels, relations, or assertion statuses. Never output a label such "
+        "as 'Other', 'Miscellaneous', or any name that does not appear verbatim in the guideline's label "
+        "list. If a span does not clearly match one of the guideline's entity labels, do not annotate it "
+        "at all — leave it out of the predictions entirely rather than tagging it with a placeholder or "
+        "made-up label.\n"
         "The predictions array should contain a result list with entity items of type 'labels', "
         "relation items of type 'relation', and assertion items of type 'labels'.\n"
         "This is the John Snow Labs (Generative AI Lab / NLP Lab) supported prediction format: assertion "
@@ -28,7 +34,6 @@ def build_prompt(model_name: str, clinical_note: str, guideline_text: str) -> st
         "  {\n"
         "    \"id\": 1001,\n"
         "    \"data\": {\"text\": \"The patient was prescribed Metformin 500mg daily for diabetes.\"},\n"
-        "    \"annotations\": [],\n"
         "    \"predictions\": [\n"
         "      {\n"
         "        \"id\": \"pred_set_771\",\n"
@@ -99,9 +104,11 @@ def build_prompt(model_name: str, clinical_note: str, guideline_text: str) -> st
     )
 
     if model_name_normalized.startswith("gpt"):
-        return base_prompt + "\nUse concise but accurate extraction."
-    if "mistral" in model_name_normalized:
-        return base_prompt + "\nBe strict about label names and avoid unsupported relations."
-    if "claude" in model_name_normalized:
-        return base_prompt + "\nUse concise but accurate extraction."
-    return base_prompt
+        static_prompt += "\nUse concise but accurate extraction."
+    elif "mistral" in model_name_normalized:
+        static_prompt += "\nBe strict about label names and avoid unsupported relations."
+    elif "claude" in model_name_normalized:
+        static_prompt += "\nUse concise but accurate extraction."
+
+    dynamic_prompt = "Clinical note:\n" f"{clinical_note}"
+    return f"{static_prompt}\n\n{dynamic_prompt}"
