@@ -3,43 +3,35 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-SRC_ROOT = Path(__file__).resolve().parents[2]
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from connectors.anthropic_connector import AnthropicConnector
-from connectors.azure_chat_openai_connector import AzureChatOpenAIConnector
-from prompts import build_prompt
-
-CURRENT_DIR = Path(__file__).resolve().parent
-if str(CURRENT_DIR) not in sys.path:
-    sys.path.insert(0, str(CURRENT_DIR))
+from llm import LLMRouter, RouterResult
 
 from update_offset import update_offsets
 
 
-DEFAULT_SYSTEM_PROMPT = (
-    "You are a clinical NLP annotator. Use the provided clinical note and annotation guideline "
-    "as the only source of truth for extraction. Return valid JSON only. Do not include commentary. "
-    "Only extract entities and relations that are explicitly supported by the guideline. "
-    "Do not invent new labels or relation types. "
-    "Use only the labels and relation types that appear in the annotation guideline. "
-    "Use exact character offsets from the note for start and end. "
-    "If an entity or relation is not clearly supported by the guideline, omit it. "
-    "Return a JSON array with one document object per input note. Each document object must have "
-    "id, data, and predictions. The predictions array must contain a result list with "
-    "entity entries of type 'labels' and relation entries of type 'relation'."
-)
+TASK = "clinical_ner"
+
+# Deterministic validation of the LLM's *raw* output shape (CLAUDE.md Pattern 1):
+# only gross failures (a bare string / number / null) are rejected here, which
+# triggers a router retry.
+_LLM_OUTPUT_SCHEMA = {"type": ["array", "object"]}
 
 
-_MODEL_VERSION_BY_BACKEND = {
-    "anthropic": "anthropic_clinical_ner",
-    "azure": "azure_openai_clinical_ner",
-}
+@dataclass
+class ExtractionResult:
+    payload: list[dict[str, Any]]
+    provider: str
+    model: str
+    usage: dict[str, Any] = field(default_factory=dict)
+    trace_id: str | None = None
 
 
 def _resolve_backend(model_name: str | None) -> str:
@@ -47,13 +39,6 @@ def _resolve_backend(model_name: str | None) -> str:
     if normalized == "anthropic" or normalized.startswith("claude"):
         return "anthropic"
     return "azure"
-
-
-def _build_connector(model_name: str | None) -> AnthropicConnector | AzureChatOpenAIConnector:
-    backend = _resolve_backend(model_name)
-    if backend == "anthropic":
-        return AnthropicConnector()
-    return AzureChatOpenAIConnector()
 
 
 def _read_text(file_path: str) -> str:
@@ -262,30 +247,65 @@ def _normalize_jsl_payload(
     }]
 
 
+def _count_annotations(payload: list[dict[str, Any]]) -> dict[str, int]:
+    """Count extracted entities, assertions, and relations across all documents."""
+    entities = assertions = relations = 0
+    for doc in payload:
+        for prediction in doc.get("predictions", []):
+            for item in prediction.get("result", []):
+                if item.get("type") == "relation":
+                    relations += 1
+                elif item.get("from_name") == "assertion":
+                    assertions += 1
+                elif item.get("type") == "labels":
+                    entities += 1
+    return {
+        "entities_extracted": entities,
+        "assertions_extracted": assertions,
+        "relations_extracted": relations,
+    }
+
+
 def extract_clinical_ner(
     clinical_note: str,
     guideline_text: str | None = None,
-    connector: AnthropicConnector | AzureChatOpenAIConnector | None = None,
-    system_prompt: str | None = None,
+    router: LLMRouter | None = None,
     model_name: str | None = None,
     note_name: str | None = None,
-) -> dict[str, Any]:
+) -> ExtractionResult:
     if not clinical_note or not clinical_note.strip():
         raise ValueError("clinical_note must not be empty")
 
-    if connector is None:
-        connector = _build_connector(model_name)
-
+    router = router or LLMRouter()
     guideline_text = guideline_text or ""
-    prompt = build_prompt(model_name or "", clinical_note, guideline_text)
 
-    result = connector.invoke_llm_for_json(
-        prompt=prompt,
-        system_prompt=system_prompt or DEFAULT_SYSTEM_PROMPT,
+    result: RouterResult = router.complete_json(
+        task=TASK,
+        prompt_name="clinical_ner_user",
+        system_prompt_name="clinical_ner_system",
+        variables={"clinical_note": clinical_note, "guideline_text": guideline_text},
+        model_preference=model_name,
+        schema=_LLM_OUTPUT_SCHEMA,
+        metadata={"component": "clinical_ner_extractor"},
     )
 
-    model_version = _MODEL_VERSION_BY_BACKEND[_resolve_backend(model_name)]
-    return _normalize_jsl_payload(result, clinical_note, model_version=model_version, note_name=note_name)
+    model_version = router.settings.provider(result.provider).model_version
+    payload = _normalize_jsl_payload(result.data, clinical_note, model_version=model_version, note_name=note_name)
+
+    # Domain evaluation scores on the trace, for Langfuse quality analytics.
+    counts = _count_annotations(payload)
+    for name, value in counts.items():
+        router.score(
+            trace_id=result.trace_id, name=name, value=value, data_type="NUMERIC"
+        )
+
+    return ExtractionResult(
+        payload=payload,
+        provider=result.provider,
+        model=result.model,
+        usage=result.usage or {},
+        trace_id=result.trace_id,
+    )
 
 
 def _build_output_path(note_name: str, backend: str, output_path: str | None = None) -> str | None:
@@ -302,31 +322,35 @@ def _process_note(
     note_text: str,
     guideline_text: str,
     model_name: str | None,
-    connector: AnthropicConnector | AzureChatOpenAIConnector,
+    router: LLMRouter,
     output_path: str | None,
     note_name: str | None = None,
 ) -> None:
     start_time = time.perf_counter()
-    output = extract_clinical_ner(
+    result = extract_clinical_ner(
         note_text,
         guideline_text=guideline_text,
-        connector=connector,
+        router=router,
         model_name=model_name,
         note_name=note_name,
     )
     elapsed_seconds = round(time.perf_counter() - start_time, 3)
-    usage = getattr(connector, "last_usage", None) or {}
+
+    output = result.payload
+    usage = result.usage or {}
 
     if output_path:
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as handle:
             json.dump(output, handle, indent=2)
         metrics_payload = {
+            "provider": result.provider,
+            "model": result.model,
             "prompt_tokens": usage.get("prompt_tokens"),
             "completion_tokens": usage.get("completion_tokens"),
             "total_tokens": usage.get("total_tokens"),
-            "cached_tokens": getattr(connector, "last_cached_tokens", None),
             "elapsed_seconds": elapsed_seconds,
+            "trace_id": result.trace_id,
         }
         print(f"METRICS_JSON {json.dumps(metrics_payload)}")
         print(f"Saved results to {output_path}")
@@ -400,7 +424,7 @@ def _process_folder(
     output_folder: str,
     guideline_text: str,
     model_name: str | None,
-    connector: AnthropicConnector | AzureChatOpenAIConnector,
+    router: LLMRouter,
 ) -> None:
     file_names = sorted(
         name for name in os.listdir(input_folder)
@@ -422,7 +446,7 @@ def _process_folder(
         output_path = os.path.join(output_folder, f"{note_name}.json")
         try:
             note_text = _read_text(input_path)
-            _process_note(note_text, guideline_text, model_name, connector, output_path, note_name=note_name)
+            _process_note(note_text, guideline_text, model_name, router, output_path, note_name=note_name)
             succeeded += 1
             succeeded_note_names.append(note_name)
         except Exception as exc:
@@ -465,24 +489,27 @@ def main() -> None:
         default_guideline = os.path.join(os.path.dirname(__file__), "annotation_guideline.md")
         guideline_text = _read_text(default_guideline) if os.path.exists(default_guideline) else ""
 
-    connector = _build_connector(args.model_name)
+    router = LLMRouter()
+    try:
+        if args.input_folder:
+            _process_folder(args.input_folder, args.output_folder, guideline_text, args.model_name, router)
+            return
 
-    if args.input_folder:
-        _process_folder(args.input_folder, args.output_folder, guideline_text, args.model_name, connector)
-        return
+        if args.file_path:
+            note_text = _read_text(args.file_path)
+            note_name = os.path.splitext(os.path.basename(args.file_path))[0]
+        else:
+            note_text = args.note or ""
+            if not note_text:
+                note_text = input("Enter clinical note: ")
+            note_name = "note"
 
-    if args.file_path:
-        note_text = _read_text(args.file_path)
-        note_name = os.path.splitext(os.path.basename(args.file_path))[0]
-    else:
-        note_text = args.note or ""
-        if not note_text:
-            note_text = input("Enter clinical note: ")
-        note_name = "note"
-
-    backend = _resolve_backend(args.model_name)
-    output_path = _build_output_path(note_name, backend, args.output_path)
-    _process_note(note_text, guideline_text, args.model_name, connector, output_path, note_name=note_name)
+        backend = _resolve_backend(args.model_name)
+        output_path = _build_output_path(note_name, backend, args.output_path)
+        _process_note(note_text, guideline_text, args.model_name, router, output_path, note_name=note_name)
+    finally:
+        # Ensure in-flight Langfuse traces are exported before exit.
+        router.flush()
 
 
 if __name__ == "__main__":

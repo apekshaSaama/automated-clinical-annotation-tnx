@@ -1,0 +1,131 @@
+Annotation guideline:
+{{guideline_text}}
+
+Return JSON only as a single JSON array. Each array element must be a document object with id, data, and predictions. Use only entity labels, relation labels, and assertion labels from the guideline.
+Do not invent unsupported labels, relations, or assertion statuses. Never output a label such as 'Other', 'Miscellaneous', or any name that does not appear verbatim in the guideline's label list. If a span does not clearly match one of the guideline's entity labels, do not annotate it at all — leave it out of the predictions entirely rather than tagging it with a placeholder or made-up label.
+ Be strict for 'do not' rules in the guideline. 
+Do not tag a word just because it sits near a qualifying mention (for example a generic word like 'history', an unrelated intensity word like 'abundant' modifying a different substance, or a product name variant like 'electronic cigarettes' when the guideline's type label is meant for the substance actually being asserted). Each span must independently satisfy the guideline's own definition for the label you assign it — proximity to another qualifying span is not sufficient justification.
+Entity spans are allowed to overlap or nest inside one another whenever the guideline defines separate labels for the whole phrase and for a sub-concept inside it. A shorter span naming a more specific sub-concept (for example a substance/type word like 'cigarette' or 'cigarettes') must still get its own separate entity item even when it falls entirely inside a longer span you already tagged with a different label (for example a frequency or quantity phrase like '2 cigarettes per day'). Do not skip a sub-span just because it is already covered by a larger span with a different label — emit both as separate result items with their own start/end.
+Status-qualifier adjectives such as 'current', 'active', 'former', 'ex-' describe the assertion status of the entity they modify — they are not part of the entity span and are not a frequency. For a phrase like 'current smoker' or 'active smoker', tag only the base noun ('smoker') as the entity and let the qualifier drive which assertion status you attach to it; do not include the qualifier word in the entity span, and do not create a separate Substance_Frequency (or equivalent) item for it. Only usage-intensity words that describe how much or how often (for example 'heavy', 'light', 'moderate', 'occasional') should be tagged as a frequency/quantity entity.
+Annotate every qualifying occurrence of a concept in the note, not only the first one. If the same keyword or concept (for example a smoking status word like 'smoking' or 'smoked') appears more than once, each occurrence that meets the guideline's criteria must get its own entity item with its own start/end offsets — do not stop after the first match. This includes different grammatical forms of the same concept word (for example 'smoke', 'smoking', 'smoked', 'smoker' all count as separate occurrences of the same concept) — tag each form's occurrence separately, not only the exact same word repeated verbatim.
+The predictions array should contain a result list with entity items of type 'labels', relation items of type 'relation', and assertion items of type 'labels'.
+This is the John Snow Labs (Generative AI Lab / NLP Lab) supported prediction format: assertion status is represented as its own result item, separate from the entity item it applies to. An assertion item has from_name 'assertion', to_name 'text', type 'labels', and a value with the same start, end, and text as the entity span it is attached to, plus a labels array containing a single assertion status taken from the guideline.
+Only add an assertion item for entity types that the guideline defines an assertion status for. Do not add assertion items for entities without a defined assertion status, and do not attach more than one assertion status to the same entity span. Decide best suitable assertion considering entire note text.
+Every assertion status decision must be made by reading the ENTIRE note for that patient — never decide from just the sentence containing the span you are labeling, since the deciding signal may appear in a different sentence, earlier or later in reading order than the span itself. There is no sentence-level exception to this rule anywhere below.
+When deciding a current/former (or similarly time-specific) assertion status, search the ENTIRE note for an explicit status marker (for example 'currently', 'quit', 'stopped', 'ceased', 'transitioned away from', 'resumed', 'relapsed', 'in the last period'). If exactly one such marker (current-type or former-type, not both) exists anywhere in the note for that patient's use of the substance, apply the resulting status to every occurrence of that concept in the note, including mentions that appear earlier in reading order than the marker.
+If the note gives concrete usage detail for the behavior (a quantity, frequency, or duration such as pack-years, 'X cigarettes per day', or an 'X-year history') and no quit/stop/transition marker appears anywhere in the note for that use, treat the use as ongoing and assign the current-status label — do not default to 'status unknown' merely because the sentence uses past tense; clinical narratives routinely describe ongoing habits in past tense. Reserve the 'status unknown' label for cases where the note gives no such detail at all, for example a bare mention in a list of risk factors or exposures ('smoking', 'tobacco', 'alcohol') with no quantity, duration, frequency, or quit/stop language anywhere in the note to indicate whether it is ongoing or past.
+Conflict resolution — if the note contains BOTH an explicit current-type marker AND an explicit former-type/quit marker for the same patient and substance (for example a relapse, or otherwise conflicting documentation):
+  a. If the note states or implies an explicit timeline (dates, ages, durations, or relative-time cues such as 'quit in 2015, resumed smoking in 2018', or 'stopped for two years then started again'), use that timeline to determine which status holds as of the most recent point in time described, and apply that single status to every occurrence of the concept in the note.
+  b. If the note gives no timeline or chronological cues to order the two markers, apply the status from whichever explicit marker appears LATER in the note's reading order, and apply that single status to every occurrence of the concept in the note.
+  Never average, hedge, or invent an in-between status for this conflict — always resolve to exactly one of Current smoker or Former smoker using (a) then (b), and apply it to every mention of the concept in the note except the literal 'nonsmoker'/'non-smoker' special case below.
+Special case — the literal words 'nonsmoker' or 'non-smoker': these deny current use but do not, by themselves, state whether the patient ever smoked in the past. A literal 'nonsmoker'/'non-smoker' mention directly conflicts with an explicit former-smoker/quit marker found elsewhere in the note (one says the patient used to smoke, the other denies smoking without acknowledging that as a change from past use), and the note does not resolve which reading is correct. Because of this, do NOT apply the whole-note-derived status (from the general rule or the conflict-resolution rule above) to a literal 'nonsmoker'/'non-smoker' span — always assign 'Unknown if ever smoked' to that specific span regardless of what the rest of the note says. Still apply the whole-note-derived status normally to every OTHER mention of the concept in the note that is not the literal 'nonsmoker'/'non-smoker' wording.
+When the same assertion is expressed more than once for the same patient using compatible signals (i.e. not the conflict case or the 'nonsmoker' special case above), keep the assertion status consistent across all of those mentions.
+For Smoking_Status assertions, decide in this order, always after reading the entire note:
+1. Does the note contain an explicit Current-smoker signal (e.g. 'active smoker', 'smokes daily', 'smokes occasionally', a chronic/ongoing usage description, or concrete usage detail such as pack-years, 'X cigarettes per day', or an 'X-year history' with no quit/stop language anywhere) and/or an explicit Former-smoker signal (e.g. 'ex-smoker', 'quit smoking', 'past smoker', 'in remission', or any explicit cessation marker such as 'quit', 'stopped', 'ceased', 'transitioned away from')? If exactly one of these is present, assign that status (Current smoker or Former smoker) to every mention of the concept and stop — do not continue to the checks below. If BOTH are present, apply the conflict-resolution rule above to pick a single status, then stop. In either outcome, apply the 'nonsmoker'/'non-smoker' special case override to any span with that literal wording.
+2. If step 1 finds no current or former signal anywhere in the note, check whether the note establishes a historical smoking status (e.g. 'history of smoking', 'tobacco use HX', a pack-year quantity with no current/former marker) but leaves the current status unclear. If so, assign 'Smoker current status unknown' — this is used when the historical status is known but the current status is not.
+3. If neither step 1 nor step 2 applies — i.e. there is no signal of current or former status and no signal of any historical smoking status either — assign 'Unknown if ever smoked'. This is also the required label for the literal 'nonsmoker'/'non-smoker' special case above, applied to that span even when step 1 or step 2 resolves a different status for other mentions in the same note.
+Every result item of type 'labels' (both entity items and assertion items) must include an 'ai_reasoning' field inside its 'value' object, alongside 'start', 'end', 'text', and 'labels'. The ai_reasoning value must quote or closely paraphrase the specific guideline context, rule, or line that supports the assigned label or assertion status — not a description of the note text alone. Ground every ai_reasoning in the guideline's own wording (e.g. its definition, rule, or example for that label) and then briefly tie that guideline context to the span in the note. If no guideline line supports the annotation, do not make the annotation.
+Every result item of type 'labels' (both entity items and assertion items) must also include a 'confidence' field inside its 'value' object, a number between 0 and 1 representing your confidence that the label (or assertion status) assigned to that span is correct.
+Example output format:
+[
+  {
+    "id": 1001,
+    "data": {"text": "The patient was prescribed Metformin 500mg daily for diabetes. He also reported smoking 2 cigarettes per day for 20 years."},
+    "predictions": [
+      {
+        "id": "pred_set_771",
+        "model_version": "healthcare_relation_extraction_v3",
+        "score": 0.89,
+        "result": [
+          {
+            "id": "pred_chunk_01",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 27,
+              "end": 36,
+              "text": "Metformin",
+              "labels": ["DRUG"],
+              "ai_reasoning": "Guideline defines DRUG as 'any named medication or pharmaceutical substance administered to the patient'; 'Metformin' is a named medication being prescribed.",
+              "confidence": 0.97
+            }
+          },
+          {
+            "id": "pred_chunk_02",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 37,
+              "end": 42,
+              "text": "500mg",
+              "labels": ["DOSAGE"],
+              "ai_reasoning": "Guideline defines DOSAGE as 'a numeric amount and unit describing how much of a drug is given'; '500mg' is a numeric amount with unit directly following the drug name.",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "pred_chunk_03",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 53,
+              "end": 61,
+              "text": "diabetes",
+              "labels": ["PROBLEM"],
+              "ai_reasoning": "Guideline defines PROBLEM as 'a diagnosis, disease, or condition affecting the patient'; 'diabetes' names the condition the medication is prescribed for.",
+              "confidence": 0.93
+            }
+          },
+          {
+            "id": "pred_assertion_01",
+            "from_name": "assertion",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 53,
+              "end": 61,
+              "text": "diabetes",
+              "labels": ["Present"],
+              "ai_reasoning": "Guideline defines Present as 'the condition is stated as a current, confirmed fact with no negation, hedging, or family/other-person reference'; the note states the diagnosis as a current fact with none of those exclusions.",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "pred_chunk_04",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 88,
+              "end": 108,
+              "text": "2 cigarettes per day",
+              "labels": ["FREQUENCY"],
+              "ai_reasoning": "Guideline defines FREQUENCY as 'a numeric amount and unit describing how often something occurs'; '2 cigarettes per day' states how often the patient smokes.",
+              "confidence": 0.92
+            }
+          },
+          {
+            "id": "pred_chunk_05",
+            "from_name": "label",
+            "to_name": "text",
+            "type": "labels",
+            "value": {
+              "start": 90,
+              "end": 100,
+              "text": "cigarettes",
+              "labels": ["SUBSTANCE_TYPE"],
+              "ai_reasoning": "Guideline defines SUBSTANCE_TYPE as 'the specific substance named in a usage mention'; 'cigarettes' names the substance type and must be tagged on its own even though it falls entirely inside the FREQUENCY span above.",
+              "confidence": 0.9
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+
+Clinical note:
+{{clinical_note}}

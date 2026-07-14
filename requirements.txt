@@ -1,0 +1,10 @@
+# Runtime dependencies for the clinical annotation CLI and its LLMRouter.
+# Transport to LLM providers stays on the Python standard library (urllib);
+# these packages add observability, config loading, and output validation.
+
+langfuse>=2.53,<3          # tracing, prompt management, cost & latency analytics
+python-dotenv>=1.0,<2      # load credentials from .env at runtime
+jsonschema>=4.21,<5        # deterministic validation of structured LLM output
+
+# Test tooling
+pytest>=8.0,<9
