@@ -271,6 +271,7 @@ class LLMRouter:
                     output=result.text,
                     input_tokens=result.input_tokens,
                     output_tokens=result.output_tokens,
+                    cached_tokens=result.cached_tokens,
                     cost_details=self._cost_details(
                         result.model, result.input_tokens, result.output_tokens
                     ),
@@ -363,7 +364,9 @@ class LLMRouter:
         # is the true total, not just the last call.
         last_reason = "no output produced"
         prompt = user_text
-        cum_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        cum_usage = {
+            "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "cached_tokens": 0,
+        }
         cum_cost = 0.0
         for attempt in range(1, self._json_max_retries + 1):
             result = self._run_chain(
@@ -427,6 +430,7 @@ class LLMRouter:
         acc["prompt_tokens"] += prompt_t
         acc["completion_tokens"] += completion_t
         acc["total_tokens"] += total_t if total_t is not None else prompt_t + completion_t
+        acc["cached_tokens"] += usage.get("cached_tokens") or 0
 
     def _finalize_trace(
         self, trace, trace_id: str | None, result: ProviderResult,

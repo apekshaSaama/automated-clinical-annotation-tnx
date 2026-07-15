@@ -12,7 +12,9 @@
       "backoff_base_seconds": 2.0,
       "supports_json_mode": true,
       "prompt_suffix": "\nUse concise but accurate extraction.",
-      "model_version": "azure_openai_clinical_ner"
+      "model_version": "azure_openai_clinical_ner",
+      "prompt_cache_key": "clinical-ner-guideline-v3",
+      "prompt_cache_retention": "24h"
     },
     "anthropic": {
       "type": "anthropic",
@@ -25,7 +27,8 @@
       "backoff_base_seconds": 2.0,
       "supports_json_mode": false,
       "prompt_suffix": "\nUse concise but accurate extraction.",
-      "model_version": "anthropic_clinical_ner"
+      "model_version": "anthropic_clinical_ner",
+      "cache_system_prompt": true
     }
   },
   "tasks": {

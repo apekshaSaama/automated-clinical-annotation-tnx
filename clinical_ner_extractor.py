@@ -349,6 +349,7 @@ def _process_note(
             "prompt_tokens": usage.get("prompt_tokens"),
             "completion_tokens": usage.get("completion_tokens"),
             "total_tokens": usage.get("total_tokens"),
+            "cached_tokens": usage.get("cached_tokens"),
             "elapsed_seconds": elapsed_seconds,
             "trace_id": result.trace_id,
         }

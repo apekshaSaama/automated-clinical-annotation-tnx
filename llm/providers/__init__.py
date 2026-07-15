@@ -22,8 +22,17 @@ def build_provider(config: ProviderConfig) -> Provider:
             f"No adapter for provider type {config.type!r}; known: {list(_BY_TYPE)}"
         )
     if config.type == "anthropic":
-        return provider_cls(timeout=config.timeout, max_tokens=config.max_tokens)
-    return provider_cls(timeout=config.timeout, token_param=config.token_param)
+        return provider_cls(
+            timeout=config.timeout,
+            max_tokens=config.max_tokens,
+            cache_system_prompt=config.cache_system_prompt,
+        )
+    return provider_cls(
+        timeout=config.timeout,
+        token_param=config.token_param,
+        prompt_cache_key=config.prompt_cache_key,
+        prompt_cache_retention=config.prompt_cache_retention,
+    )
 
 
 __all__ = ["Provider", "ProviderResult", "build_provider"]

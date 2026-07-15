@@ -34,6 +34,15 @@ class ProviderConfig:
     prompt_suffix: str
     model_version: str
     model_class: str
+    # Azure OpenAI manual prompt cache controls (2025-04-01-preview+): a stable
+    # prompt_cache_key scopes the cache so unrelated workloads don't evict each
+    # other; prompt_cache_retention keeps it warm past the default ~5-10 min
+    # ephemeral window. None on providers that don't support them.
+    prompt_cache_key: str | None = None
+    prompt_cache_retention: str | None = None
+    # Anthropic: wrap the system prompt in a cache_control breakpoint. Off by
+    # default for providers where it doesn't apply.
+    cache_system_prompt: bool = False
 
 
 @dataclass(frozen=True)
@@ -143,6 +152,9 @@ def load_settings() -> Settings:
             prompt_suffix=raw.get("prompt_suffix", ""),
             model_version=raw.get("model_version", name),
             model_class=raw.get("model_class", "reasoning"),
+            prompt_cache_key=raw.get("prompt_cache_key"),
+            prompt_cache_retention=raw.get("prompt_cache_retention"),
+            cache_system_prompt=bool(raw.get("cache_system_prompt", False)),
         )
 
     tasks: dict[str, TaskConfig] = {}

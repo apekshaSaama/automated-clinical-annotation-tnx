@@ -158,6 +158,7 @@ class Observability:
         output: Any = None,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
+        cached_tokens: int | None = None,
         cost_details: dict[str, float] | None = None,
         level: str | None = None,
         status_message: str | None = None,
@@ -170,6 +171,11 @@ class Observability:
                 "input": int(input_tokens or 0),
                 "output": int(output_tokens or 0),
             }
+            if cached_tokens:
+                # Langfuse convention key; surfaces prompt-cache hits (Azure
+                # prompt_cache_key reuse / Anthropic cache_control) on the
+                # generation so cache effectiveness is visible on dashboards.
+                usage_details["cache_read_input_tokens"] = int(cached_tokens)
         try:
             # 4.x split the old one-shot `generation.end(output=..., ...)`
             # into update() (sets the fields) + end() (closes the span).

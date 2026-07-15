@@ -11,6 +11,7 @@ from __future__ import annotations
 import http.client
 import json
 import os
+import sys
 import urllib.error
 import urllib.request
 
@@ -23,7 +24,13 @@ _RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 class AzureOpenAIProvider:
     name = "azure"
 
-    def __init__(self, timeout: int = 60, token_param: str = "max_tokens") -> None:
+    def __init__(
+        self,
+        timeout: int = 60,
+        token_param: str = "max_tokens",
+        prompt_cache_key: str | None = None,
+        prompt_cache_retention: str | None = None,
+    ) -> None:
         self.endpoint = (os.environ.get("AZURE_OPENAI_ENDPOINT") or "").rstrip("/")
         self.api_key = os.environ.get("AZURE_OPENAI_API_KEY")
         self.deployment_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT")
@@ -32,6 +39,12 @@ class AzureOpenAIProvider:
         # Newer Azure deployments require 'max_completion_tokens' instead of the
         # legacy 'max_tokens'. The exact key is config-driven per deployment.
         self.token_param = token_param
+        # Manual prompt cache controls (Azure OpenAI 2025-04-01-preview+):
+        # prompt_cache_key scopes the cache so unrelated workloads don't evict
+        # each other; prompt_cache_retention keeps it warm past the default
+        # ephemeral (~5-10 min) window. Both are config-driven, per deployment.
+        self.prompt_cache_key = prompt_cache_key
+        self.prompt_cache_retention = prompt_cache_retention
 
         if not self.endpoint:
             raise ProviderCallError(
@@ -57,6 +70,20 @@ class AzureOpenAIProvider:
             f"?api-version={self.api_version}"
         )
 
+    def _log_cache_status(self, cached_tokens: int, prompt_tokens: int) -> None:
+        if cached_tokens:
+            print(
+                f"[azure cache] HIT: {cached_tokens}/{prompt_tokens} prompt tokens "
+                f"served from cache (key={self.prompt_cache_key})",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"[azure cache] MISS: 0/{prompt_tokens} prompt tokens cached "
+                f"(key={self.prompt_cache_key})",
+                file=sys.stderr,
+            )
+
     def complete(
         self,
         *,
@@ -78,6 +105,10 @@ class AzureOpenAIProvider:
             payload[self.token_param] = max_tokens
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
+        if self.prompt_cache_key:
+            payload["prompt_cache_key"] = self.prompt_cache_key
+        if self.prompt_cache_retention:
+            payload["prompt_cache_retention"] = self.prompt_cache_retention
 
         request = urllib.request.Request(
             url=self._url(),
@@ -120,6 +151,9 @@ class AzureOpenAIProvider:
         usage = data.get("usage") or {}
         prompt_tokens = usage.get("prompt_tokens")
         completion_tokens = usage.get("completion_tokens")
+        cached_tokens = (usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0
+        if self.prompt_cache_key:
+            self._log_cache_status(cached_tokens, prompt_tokens or 0)
         return ProviderResult(
             text=content or "",
             model=self.model,
@@ -128,6 +162,7 @@ class AzureOpenAIProvider:
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
                 "total_tokens": usage.get("total_tokens"),
+                "cached_tokens": cached_tokens,
             },
             finish_reason=choices[0].get("finish_reason"),
         )

@@ -36,6 +36,13 @@ class ProviderResult:
         return int(self.usage.get("completion_tokens") or 0)
 
     @property
+    def cached_tokens(self) -> int:
+        """Prompt tokens served from a provider-side cache (Azure prompt cache
+        reuse / Anthropic cache_read_input_tokens). 0 when not cached or the
+        provider doesn't report it."""
+        return int(self.usage.get("cached_tokens") or 0)
+
+    @property
     def truncated(self) -> bool:
         return (self.finish_reason or "").lower() in _TRUNCATION_REASONS
 
