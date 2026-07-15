@@ -1,4 +1,4 @@
-# Smoking Status \- Current
+﻿# Smoking Status \- Current
 
 - Involves NER and Assertion
 - Tips and good practice: <https://www.johnsnowlabs.com/tips-and-tricks-on-how-to-annotate-assertion-in-clinical-texts/>
@@ -18,6 +18,7 @@
     - We will ignore these phrases for now, as they are default “fields” in the form - Do **NOT** need to annotate as NER
 - Do not annotate Nicotine when listed as drug
 - Do not annotate questionnaires
+- Do not annotate words which are related to smoking
 - Mind section headers
 
 
@@ -53,6 +54,9 @@ ASSERTION LABELS ARE ASSIGNED ONLY TO **SMOKING\_STATUS **NER
 - "2 packs per day for 25 years" 
     - NER: **Substance\_Frequency: **“2 packs per day”
     - NER: **Substance\_Duration: **“25 years”
+- “He quit smoking over 50 years ago”
+    - NER: **Smoking\_Status**: “smoking” with **Assertion Former smoker**
+    - “50 years ago” is **NOT** Substance\_Duration — it describes how long ago the patient quit, not how long they smoked, so it should be left unannotated
 - “NONSMOKER”
 - NER: **~~Smoking\_Status~~**~~:~~**~~~~**~~“NONSMOKER”~~ updated tokenization rule: exceptionally “smoker” in the full word “nonsmoker” should be tagged
 - Assertion: **Unknown if ever smoked**
@@ -62,8 +66,17 @@ ASSERTION LABELS ARE ASSIGNED ONLY TO **SMOKING\_STATUS **NER
 - “Social smoker in the past”
     - NER: **Smoking\_Status**:“smoker”
     - NER: **Substance\_Frequency**: “social”
+- “female patient who is heavy smoker presented with a burning sensation”
+    - NER: **Smoking\_Status**: “smoker” with **Assertion Current smoker**
+    - NER: **Substance\_Frequency**: “heavy”
+    - “burning sensation” is a symptom, unrelated to smoking - do not annotate
 - “Nicotine Polacrilex 2mg Chew 2 mg, Oral, Q2H, PRN: Nicotine Withdrawal”
     - DO NOT LABEL NICOTINE WHEN LISTED AS DRUG
+- “He was a chronic smoker of 80 packet years and a social alcoholic.”
+    - NER: **Smoking\_Status**: “smoker” with **Assertion Current smoker**
+    - NER: **Substance\_Quantity**: “80 packet years” without Assertion
+    - “alcoholic” is not smoking-related — ignore
+    - **Why Current smoker and not Former smoker**: “chronic” describes an ongoing, habitual smoking behavior, not a discontinued one. The past-tense verb “was” here reflects the tense of the note/sentence (often how a clinical note narrates a patient's history), **not** that the patient quit. Do not rely on verb tense alone to decide current vs. former — look for explicit cues of cessation (“quit”, “ex-”, “former”, “in the past”) before assigning **Former smoker**. Absent such cues, “chronic smoker” should be read as **Current smoker** even when phrased in past tense
 
  
 
