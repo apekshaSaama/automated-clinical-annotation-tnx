@@ -38,12 +38,18 @@ def _resolve_backend(model_name: str | None) -> str:
     normalized = (model_name or "").strip().lower()
     if normalized == "anthropic" or normalized.startswith("claude"):
         return "anthropic"
+    if normalized == "openai":
+        return "openai"
     return "azure"
 
 
 def _read_text(file_path: str) -> str:
     with open(file_path, "r", encoding="utf-8") as handle:
         return handle.read()
+
+
+def _sanitize_note_text(note_text: str) -> str:
+    return note_text.replace("\n", "").replace("\t", "").replace("\r", "")
 
 
 def _compute_offsets(note_text: str, mention: str) -> tuple[int, int] | None:
@@ -74,19 +80,19 @@ def _normalize_jsl_payload(
     model_version: str = "azure_openai_clinical_ner",
     note_name: str | None = None,
 ) -> list[dict[str, Any]]:
+    #note_text = _sanitize_note_text(note_text)
     if isinstance(result, list):
         if result and all(isinstance(item, dict) for item in result):
             document_items = []
             for idx, item in enumerate(result):
                 if not isinstance(item, dict):
                     continue
-                if any(key in item for key in ("data", "predictions")):
-                    item_data = item.get("data") or {}
+                if "predictions" in item:
                     document = {
                         "id": item.get("id", idx + 1001),
                         "data": {
-                            "text": item_data.get("text") or note_text,
-                            "title": note_name if note_name is not None else item_data.get("title"),
+                            "text": note_text,
+                            "title": note_name,
                         },
                         "predictions": _simplify_predictions(item.get("predictions", []), model_version),
                     }
@@ -163,13 +169,12 @@ def _normalize_jsl_payload(
                 return document_items
 
     if isinstance(result, dict):
-        if "predictions" in result and "data" in result:
-            document_data = result.get("data") or {}
+        if "predictions" in result:
             return [{
                 "id": result.get("id", 1001),
                 "data": {
-                    "text": document_data.get("text") or note_text,
-                    "title": note_name if note_name is not None else document_data.get("title"),
+                    "text": note_text,
+                    "title": note_name,
                 },
                 "predictions": _simplify_predictions(result.get("predictions", []), model_version),
             }]
@@ -276,8 +281,9 @@ def extract_clinical_ner(
     if not clinical_note or not clinical_note.strip():
         raise ValueError("clinical_note must not be empty")
 
-    router = router or LLMRouter()
     guideline_text = guideline_text or ""
+
+    router = router or LLMRouter()
 
     result: RouterResult = router.complete_json(
         task=TASK,
@@ -477,7 +483,8 @@ def main() -> None:
         "--model",
         dest="model_name",
         help="Model name used for prompt selection and backend routing. Pass 'anthropic' to use the "
-        "Anthropic API instead of Azure OpenAI.",
+        "Anthropic API instead of Azure OpenAI. 'openai'/'gpt'/'azure' all route through "
+        "LLMRouter -> llm/providers/azure_openai.py (config/models.json model_aliases).",
     )
     args = parser.parse_args()
 
