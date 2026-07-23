@@ -659,22 +659,36 @@ if st.session_state.annotation_complete:
 
             st.session_state.gt_path = str(gt_file)
 
-            # Look for generated predictions matching *_updated.json pattern
+            # 1. PRIMARY SEARCH: Strictly look for *_updated.json first
             candidates = [
                 path
                 for path in output_folder.glob("*.json")
                 if path.is_file() and path.name.endswith("_updated.json")
             ]
 
+            # 2. FALLBACK SEARCH: If *_updated.json wasn't created on the cloud, grab the regular .json
+            if not candidates:
+                candidates = [
+                    path
+                    for path in output_folder.glob("*.json")
+                    if path.is_file() and path.name != gt_file.name
+                ]
+                if candidates:
+                    st.warning(f"⚠️ '_updated.json' was not found, so we are using '{candidates[0].name}' instead.")
+
+            # --- DEBUGGER: Prints exactly what files exist in the cloud folder right now ---
+            all_files_in_folder = [p.name for p in output_folder.glob("*")]
+            st.info(f"📁 Files currently inside the cloud output folder: {all_files_in_folder}")
+            # ---------------------------------------------------------------------------------
+
             # --- THE FIX: Initialize pred_file to None first ---
             pred_file = None
 
             if not candidates:
-                st.error("Could not find a prediction JSON file (*_updated.json) in the output folder.")
+                st.error("Could not find any prediction JSON files in the output folder.")
             elif len(candidates) > 1:
                 st.error(
-                    "Found multiple '_updated.json' files in the output folder; "
-                    "there must be exactly one prediction file:\n"
+                    "Found multiple prediction files; please ensure only one is generated:\n"
                     + "\n".join(f"- {path.name}" for path in candidates)
                 )
             else:
