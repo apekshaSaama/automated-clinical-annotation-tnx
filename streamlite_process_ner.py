@@ -554,7 +554,7 @@ if "show_report" not in st.session_state:
 # --- SECTION 1: ANNOTATION FORM ---
 with st.form("annotation_form"):
     uploaded_notes = st.file_uploader(
-        "Upload Notes Folder",
+        "Upload Notes",
         type=["txt"],
         accept_multiple_files="directory",
     )
@@ -641,7 +641,7 @@ if st.session_state.annotation_complete:
 
     with st.form("gt_path_form"):
         uploaded_gt = st.file_uploader(
-            "Ground truth JSON file",
+            "Gold Standard Document for IAA Calculation",
             type=["json"],
         )
         submit_iaa = st.form_submit_button("Calculate IAA", width="stretch")
@@ -650,7 +650,7 @@ if st.session_state.annotation_complete:
         st.session_state.show_report = False
 
         if not uploaded_gt:
-            st.error("Please upload a Ground Truth JSON file.")
+            st.error("Please upload a Gold Standard Document for IAA Calculation.")
         else:
             # Save uploaded GT JSON file to disk
             gt_file = output_folder / uploaded_gt.name
