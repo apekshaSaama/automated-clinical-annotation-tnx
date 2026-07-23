@@ -188,7 +188,9 @@ def render_login_page() -> None:
     col1, col2, col3 = st.columns([1, 2.5, 1])
 
     with col1:
-        st.image(str(ROOT / "saama_logo.svg"), width=160)
+        logo_path = ROOT / "saama_logo.svg"
+        if logo_path.is_file():
+            st.image(str(logo_path), width=160)
 
     # 3. Main Center Layout Column Grid for Card Alignment
     center_col1, center_col2, center_col3 = st.columns([1, 1.3, 1])
@@ -416,7 +418,9 @@ if not st.session_state.authenticated:
 
 col1, col2, col3 = st.columns([1.5, 2, 1])
 with col1:
-    st.image(str(ROOT / "saama_logo.svg"), width=160)
+    logo_path = ROOT / "saama_logo.svg"
+    if logo_path.is_file():
+        st.image(str(logo_path), width=160)
 
 st.markdown(
     """
@@ -627,7 +631,7 @@ if submitted:
     else:
         st.session_state.annotation_complete = True
         st.session_state.annotation_output_folder = str(output_folder)
-        st.success(f"Annotation completed")
+        st.success("Annotation completed")
 
 # --- SECTION 2: IAA CALCULATION FORM ---
 if st.session_state.annotation_complete:
@@ -662,6 +666,9 @@ if st.session_state.annotation_complete:
                 if path.is_file() and path.name.endswith("_updated.json")
             ]
 
+            # --- THE FIX: Initialize pred_file to None first ---
+            pred_file = None
+
             if not candidates:
                 st.error("Could not find a prediction JSON file (*_updated.json) in the output folder.")
             elif len(candidates) > 1:
@@ -673,7 +680,7 @@ if st.session_state.annotation_complete:
             else:
                 pred_file = candidates[0]
 
-            # Execute IAA generation script if pred_file was successfully found
+            # Execute IAA generation script ONLY if pred_file was successfully assigned
             if pred_file is not None:
                 iaa_report_file = output_folder / f"iaa_chunks_{gt_file.stem}_claude.csv"
                 csv_file = output_folder / f"iaa_{gt_file.stem}_claude.csv"
@@ -689,7 +696,7 @@ if st.session_state.annotation_complete:
                 completed = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
 
                 if completed.returncode == 0:
-                    st.success(f"IAA report generated successfully!")
+                    st.success("IAA report generated successfully!")
                     st.session_state.iaa_report_file = iaa_report_file
                     st.session_state.csv_file = csv_file
                     st.session_state.completed_stdout = completed.stdout
