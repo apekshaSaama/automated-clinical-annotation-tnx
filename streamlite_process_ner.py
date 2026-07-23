@@ -6,15 +6,15 @@ import re
 import smtplib
 import subprocess
 import sys
+from datetime import datetime
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any, Final
-from datetime import datetime
 
 import pandas as pd
 import streamlit as st
-
 from dotenv import load_dotenv
+
 load_dotenv(override=True)
 
 ROOT = Path(__file__).resolve().parent
@@ -23,6 +23,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 ALLOWED_DOMAINS: Final[tuple[str, ...]] = ("@sama.com", "@saama.com", "@TriNetX.com")
+
 
 def normalize_email(email: str) -> str:
     """Normalize email by stripping whitespace and converting to lowercase."""
@@ -200,7 +201,7 @@ def render_login_page() -> None:
                 st.markdown(
                     """
                     <div class='login-title'>Clinical Pre-Annonation Process</div>
-                    <div class='login-subtitle'>Sign in with a business email from @Saama or @TriNetX</div>
+                    <div class='login-subtitle'>Sign in with a business email from @saama or @trinetx</div>
                     """,
                     unsafe_allow_html=True,
                 )
@@ -346,6 +347,7 @@ def extract_relations(doc: dict[str, Any], entities: list[dict[str, Any]]) -> li
                 }
             )
     return relations
+
 
 if not st.session_state.authenticated:
     st.markdown(
@@ -495,35 +497,46 @@ st.markdown(
         border-color: #002966 !important;
         color: #ffffff !important;
     }
+
+    /* Universal widget label blue color */
+    div[data-testid="stWidgetLabel"] *,
+    div[data-testid="stWidgetLabel"] p,
+    div[data-testid="stWidgetLabel"] label,
+    div[data-testid="stWidgetLabel"] span {
+        color: #003d99 !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+    }
+
+    /* Specific override for st.file_uploader labels */
+    [data-testid="stFileUploader"] label,
+    [data-testid="stFileUploader"] label *,
+    [data-testid="stFileUploader"] [data-testid="stWidgetLabel"] *,
+    [data-testid="stFileUploaderDropzoneInstructions"] span {
+        color: #003d99 !important;
+        font-weight: 600 !important;
+    }
+
+    /* 1. Hide ONLY the text label inside the directory uploader button (keeps SVG icon) */
+    div[data-testid="stFileUploader"]:has(input[directory]) section button span[data-testid="stHeaderActionElements"] ~ span,
+    div[data-testid="stFileUploader"]:has(input[webkitdirectory]) section button span[data-testid="stHeaderActionElements"] ~ span,
+    div[data-testid="stFileUploader"]:has(input[directory]) section button p,
+    div[data-testid="stFileUploader"]:has(input[webkitdirectory]) section button p {
+        display: none !important;
+    }
+
+    /* 2. Append 'Upload notes' next to the icon */
+    div[data-testid="stFileUploader"]:has(input[directory]) section button::after,
+    div[data-testid="stFileUploader"]:has(input[webkitdirectory]) section button::after {
+        content: "Upload notes" !important;
+        font-size: 0.875rem !important;
+        color: #31333F !important;
+        font-weight: 500 !important;
+        margin-left: 0.35rem !important;
+    }
     </style>
 
     <div class="page-title">Clinical Pre-Annonation Process</div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <style>
-        /* 1. Universal widget label blue color */
-        div[data-testid="stWidgetLabel"] *,
-        div[data-testid="stWidgetLabel"] p,
-        div[data-testid="stWidgetLabel"] label,
-        div[data-testid="stWidgetLabel"] span {
-            color: #003d99 !important;
-            font-weight: 600 !important;
-            font-size: 1rem !important;
-        }
-
-        /* 2. Specific override for st.file_uploader labels */
-        [data-testid="stFileUploader"] label,
-        [data-testid="stFileUploader"] label *,
-        [data-testid="stFileUploader"] [data-testid="stWidgetLabel"] *,
-        [data-testid="stFileUploaderDropzoneInstructions"] span {
-            color: #003d99 !important;
-            font-weight: 600 !important;
-        }
-    </style>
     """,
     unsafe_allow_html=True,
 )
@@ -659,11 +672,9 @@ if st.session_state.annotation_complete:
                 )
             else:
                 pred_file = candidates[0]
-                # st.success(f"Ground truth loaded from {uploaded_gt.name}. Ready to evaluate.")
 
             # Execute IAA generation script if pred_file was successfully found
             if pred_file is not None:
-                # FIXED: Use gt_file.stem instead of Path(gt_path).stem
                 iaa_report_file = output_folder / f"iaa_chunks_{gt_file.stem}_claude.csv"
                 csv_file = output_folder / f"iaa_{gt_file.stem}_claude.csv"
                 
@@ -679,12 +690,11 @@ if st.session_state.annotation_complete:
 
                 if completed.returncode == 0:
                     st.success(f"IAA report generated successfully!")
-                    # Save metrics files into session state so they persist when UI rerenders on button click
                     st.session_state.iaa_report_file = iaa_report_file
                     st.session_state.csv_file = csv_file
                     st.session_state.completed_stdout = completed.stdout
                 else:
-                    error_log = output_folder / f"iaa_generation_error_{Path(gt_path).stem}.log"
+                    error_log = output_folder / f"iaa_generation_error_{gt_file.stem}.log"
                     with open(error_log, "w", encoding="utf-8") as handle:
                         if completed.stderr:
                             handle.write("STDERR:\n" + completed.stderr + "\n")
@@ -693,17 +703,12 @@ if st.session_state.annotation_complete:
                     st.error("IAA generation failed. Check the error log for details.")
                     st.info(f"Error log: {error_log}")
 
-    # Outside the form: If report file properties exist in state, handle conditional UI rendering
     if "iaa_report_file" in st.session_state:
-        # st.write(f"📁 Files saved at:  \n- `{st.session_state.iaa_report_file}`  \n- `{st.session_state.csv_file}`")
-        
-        # 1. Show the "View Score" trigger button if it hasn't been toggled yet
         if not st.session_state.show_report:
             if st.button("📊 View Score", width="stretch"):
                 st.session_state.show_report = True
                 st.rerun()
 
-        # 2. Once clicked, populate the complete logs and metrics data into the UI
         if st.session_state.show_report:
             st.markdown("---")
             if st.button("🙈 Hide Score"):
@@ -719,14 +724,8 @@ if st.session_state.annotation_complete:
                 st.subheader('IAA Report Data')
                 
                 try:
-                    # io.StringIO makes Streamlit treat the text string like a file
                     df = pd.read_csv(io.StringIO(report_text))
-                    
-                    # Displays an interactive, searchable table
                     st.dataframe(df, width="stretch") 
-                    
                 except Exception as e:
                     st.error(f"Could not parse text as a table: {e}")
-                    # Fallback to text if parsing fails
                     st.code(report_text, language='text')
-
