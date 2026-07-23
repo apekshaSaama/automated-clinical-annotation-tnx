@@ -678,7 +678,7 @@ if st.session_state.annotation_complete:
 
             # --- DEBUGGER: Prints exactly what files exist in the cloud folder right now ---
             all_files_in_folder = [p.name for p in output_folder.glob("*")]
-            st.info(f"📁 Files currently inside the cloud output folder: {all_files_in_folder}")
+            # st.info(f"📁 Files currently inside the cloud output folder: {all_files_in_folder}")
             # ---------------------------------------------------------------------------------
 
             # --- THE FIX: Initialize pred_file to None first ---
