@@ -707,7 +707,8 @@ if st.session_state.annotation_complete:
                     "--iaa-report", str(iaa_report_file),
                     "--csv", str(csv_file),
                 ]
-                completed = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+                with st.spinner("Calculating IAA Score..."):
+                    completed = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
 
                 if completed.returncode == 0:
                     st.success("IAA report generated successfully!")
@@ -736,9 +737,22 @@ if st.session_state.annotation_complete:
                 st.session_state.show_report = False
                 st.rerun()
                 
+            # if st.session_state.completed_stdout:
+            #     st.info("Execution Summary Output:")
+            #     st.code(st.session_state.completed_stdout, language='text')
+
             if st.session_state.completed_stdout:
                 st.info("Execution Summary Output:")
-                st.code(st.session_state.completed_stdout, language='text')
+
+                # Regex search to find the pattern inside parenthesis: e.g., "(6/6 chunks agree, 100.00%)"
+                match = re.search(r"\(\d+/\d+\s+chunks agree,\s*[\d\.]+%\)", st.session_state.completed_stdout)
+
+                if match:
+                    # Display extracted summary text
+                    st.markdown(f"**IAA Summary:** `{match.group(0)}`")
+                else:
+                    # Fallback if the pattern isn't found in stdout
+                    st.code(st.session_state.completed_stdout, language="text")
 
             if st.session_state.iaa_report_file.exists():
                 report_text = st.session_state.iaa_report_file.read_text(encoding='utf-8')
